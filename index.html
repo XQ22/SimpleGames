@@ -1,0 +1,255 @@
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Simple RPG</title>
+<link rel="icon" href="icon.ico" >
+<style>
+body {
+	background-color:#7685a0;
+	text-align: center;
+	font-size: 32px;
+	font-family: Courier New, Courier, monospace;
+}
+
+img {
+	vertical-align: sub;
+}
+
+button {
+	text-align: center;
+	font-size: 32px;
+	font-family: Courier New, Courier, monospace;
+	border-radius: 8px;
+	margin: 5px;
+	padding: 3px;
+	transition-duration: 0.6s;
+	-webkit-transition-duration: 0.6s;
+}
+
+button:hover {
+	padding: 5px;
+	margin: 3px;
+}
+
+p {
+	font-size: 12px;
+}
+
+.bordered {
+	border: 1px solid #65748f;
+	border-radius: 8px;
+	text-align: center;
+}
+
+.flex-container {
+	display:flex;
+	height:200px;
+	align-items: center;
+	justify-content: space-around;
+}
+
+.vertflex {
+	display: flex;
+	flex-direction: column;
+}
+</style>
+<script>
+var deck = [-1,-1,0,0,1,1];
+var hand = [0,0];
+var enemyHand = [0,0];
+var EnemyHealth = 2;
+var PlayerHealth = 3;
+var PlayerDef = 0;
+var EnemyDef = 0;
+var level = 0;
+
+function repeatedEntrys(a){
+	for(let i = 0;i<a.length;i++){
+		for(let j = i+1;j<a.length;j++){
+			if(a[i]===a[j]){
+				return true;
+			}
+		}
+	}
+	return false;
+};
+
+function drawHand(){
+	let c = "Your hand:<br>";
+	// Select Cards
+	do {
+		for(let i = 0;i<hand.length;i++){
+			hand[i] = Math.floor(Math.random()*deck.length);
+		}
+	}while(repeatedEntrys(hand));
+	// Show Cards
+	for(let i = 0;i<hand.length;i++){
+		c += "<button onclick=\"playCard("+deck[hand[i]]+")\"><img src=\""+[["ATK","DEF"][+(deck[hand[i]]<0)],"HEAL"][+(deck[hand[i]]===0)]+".png\" />"+[Math.abs(deck[hand[i]])+"",""][+(deck[hand[i]]===0)]+"</button>"; // This one-line monster is effective at displaying the cards
+	}
+	document.getElementById("Hand").innerHTML = c;
+};
+
+function showDeck(){ 
+	let c = "Your Deck: ";
+	for(let i = 0;i<deck.length;i++){
+		c += "<span class=\"bordered\">"
+		if(deck[i]<0){
+			c += "<img src=\"DEF.png\"/>"+(-deck[i]);
+		} else if(deck[i]>0){
+			c += "<img src=\"ATK.png\"/>"+deck[i];
+		} else {
+			c += "<img src=\"HEAL.png\"/>";
+		}
+		c += "</span> ";
+	}
+	document.getElementById("Deck").innerHTML = c;
+	document.getElementById("Deck").style.display = "block";
+	document.getElementById("DeckButton").innerHTML = "Hide Deck";
+	document.getElementById("DeckButton").onclick = function(e){
+		document.getElementById("Deck").style.display = "none";
+		document.getElementById("DeckButton").innerHTML = "Show Deck";
+		document.getElementById("DeckButton").onclick = function(e){showDeck();};
+	};
+};
+
+function playCard(n){
+	let c = "";
+	if(n<0){
+		PlayerDef -= n;
+		c += "You defend yourself with<br>"+(-n)+" layer"+["s",""][+(n===-1)]+" of security";
+	}else if(n>0){
+		EnemyHealth -= [(n - EnemyDef),0][+(EnemyDef>n)];
+		c += "You attack enemy for<br>"+(n)+" damage "+["and get "+(n-EnemyDef)+" hit"+["s",""][+(n-EnemyDef===1)],"but miss."][+(EnemyDef>=n)]; 
+	}else{
+		PlayerHealth++;
+		c += "You give yourself some health";
+	}
+	EnemyDef = 0;
+	if(EnemyHealth <= 0){
+		UpgradeMenu();
+	}
+	document.getElementById("eHealth").innerHTML = "Enemy HP: " + EnemyHealth + [""," (+"+EnemyDef+")"][+(EnemyDef>0)];
+	document.getElementById("pHealth").innerHTML = "Your HP: " + PlayerHealth + [""," (+"+PlayerDef+")"][+(PlayerDef>0)];
+	if(EnemyHealth > 0){
+		enemyTurn();
+	}
+	document.getElementById("lastAct").innerHTML = c;
+	
+};
+
+function enemyTurn(){
+	let c = "";
+	document.getElementById("whoseTurn").innerHTML = "Enemy Turn";
+	document.getElementById("Hand").innerHTML = "[Enemy Turn]";
+	do {
+		for(let i = 0;i<enemyHand.length;i++){
+			enemyHand[i] = Math.floor(Math.random()*deck.length);
+		}
+	}while(repeatedEntrys(enemyHand));
+	enemyCard = deck[enemyHand[Math.floor(Math.random()*enemyHand.length)]];
+	if(enemyCard<0){
+		EnemyDef -= enemyCard;
+		c += "Enemy defends themself with<br>"+(-enemyCard)+" layer"+["s",""][+(enemyCard===-1)]+" of security";
+	} else if(enemyCard>0){
+		PlayerHealth -= [(enemyCard - PlayerDef),0][+(PlayerDef>enemyCard)];
+		c += "Enemy attacks you for<br>"+(enemyCard)+" damage "+["and gets "+(enemyCard-PlayerDef)+" hit"+["s",""][+(enemyCard-PlayerDef===1)],"but misses."][+(PlayerDef>=enemyCard)];
+	} else {
+		EnemyHealth++;
+		c += "Enemy gives themself some health";
+	}
+	setTimeout(function(e){
+		document.getElementById("lastAct").innerHTML = c;
+		document.getElementById("whoseTurn").innerHTML = "Your Turn";
+		document.getElementById("eHealth").innerHTML = "Enemy HP: " + EnemyHealth + [""," (+"+EnemyDef+")"][+(EnemyDef>0)];
+		document.getElementById("pHealth").innerHTML = "Your HP: " + PlayerHealth + [""," (+"+PlayerDef+")"][+(PlayerDef>0)];
+		PlayerDef = 0;
+		drawHand();
+		if(PlayerHealth <= 0){
+			document.getElementById("Battle").style.display = "none";
+			document.getElementById("Upgrade").style.display = "none";
+			document.getElementById("LosingScreen").style.display = "flex";
+			document.getElementById("DeathCause").innerHTML = "Cause of death: "+c;
+		}
+	},1200)
+};
+
+function initBattle(){
+	EnemyHealth = 2 + level*level;
+	PlayerHealth = 3 + level*level;
+	drawHand();
+	document.getElementById("pHealth").innerHTML = "Your HP: " + PlayerHealth;
+	document.getElementById("eHealth").innerHTML = "Enemy HP: " + EnemyHealth;
+	document.getElementById("lastAct").innerHTML = "Select a card to do an action.";
+	document.getElementById("Level").innerHTML = "Level "+level;
+	document.getElementById("Battle").style.display = "flex";
+	document.getElementById("Upgrade").style.display = "none";
+	document.getElementById("LosingScreen").style.display = "none";
+};
+
+function UpgradeMenu(){
+	document.getElementById("Battle").style.display = "none";
+	document.getElementById("Upgrade").style.display = "flex";
+	document.getElementById("LosingScreen").style.display = "none";
+	let c = "";
+	let DefUp = Math.abs(Math.min.apply(null,deck)-1+Math.floor(Math.random()*level));
+	let AtkUp = Math.abs(Math.max.apply(null,deck)+1-Math.floor(Math.random()*level));
+	c += "<div><button onclick=\"Upgrade("+(-DefUp)+")\"><img src=\"DEF.png\"/>"+DefUp+"</button>";
+	c += "<button onclick=\"Upgrade("+AtkUp+")\"><img src=\"ATK.png\"/>"+AtkUp+"</button>";
+	c += "<button onclick=\"Upgrade(0)\"><img src=\"HEAL.png\"/></button></div>";
+	if(hand.length < deck.length/2){c += "<div><button onclick=\"(function(e){hand.push(0);enemyHand.push(0);initBattle();level++;})();\">+1 Card per turn</button></div>";}
+	document.getElementById("availableUpgrades").innerHTML = c;
+};
+
+function Upgrade(n){
+	deck.push(n);
+	deck.sort(function(a, b){return a - b});
+	initBattle();
+	level++;
+};
+
+function Reset(){
+	deck = [-1,0,1];
+	hand = [0,0];
+	enemyHand = [0,0];
+	EnemyHealth = 2;
+	PlayerHealth = 3;
+	PlayerDef = 0;
+	EnemyDef = 0;
+	level = 0;
+	initBattle();
+};
+
+
+</script>
+</head>
+<body onload="initBattle()">
+<div id="Deck"></div><button id = "DeckButton" onclick="showDeck()">Show Deck</button>
+<hr>
+<div id="Battle" class="flex-container">
+<div id="BattleLeft" class="vertflex"><div id="Level"></div><div id="Hand"></div></div>
+<div id="BattleStatus">
+<span id="lastAct"></span><br>
+<span id="whoseTurn">Your Turn</span><br>
+<span id="pHealth"></span><br>
+<span id="eHealth"></span>
+</div>
+</div>
+<div id="Upgrade" class="flex-container">
+<div style="width:50%">
+<h1>Level Up!</h1>
+<p>You beat an enemy, so you can add a card to the deck for the next round. Be warned, enemies draw from the same deck as you, so be careful what upgrade you choose.</p>
+</div>
+<div id="availableUpgrades" class="vertflex"></div>
+</div>
+<div id="LosingScreen" class="flex-container">
+<div>
+<h1>You lost.</h1>
+<p id="DeathCause"></p>
+</div>
+<button onclick="Reset()">Reset?</button>
+</div>
+<hr>
+<h4>Info:</h4>
+<p>Click one of the cards in your hand to do one of three actions: healing, attacking, or defending. Healing will increase your HP by one point. Defending will reduce your damage intake for the enemy's next turn. Attacking will reduce the enemy's HP. The goal is to get the enemy's HP down to 0. Every turn, you get a new hand of cards to choose from. After defeating an enemy, you can add more cards to your deck.</p>
+</body>
+</html>
