@@ -1,0 +1,196 @@
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Endless Pineapple Dungeon Madness</title>
+<link rel="icon" href="icon.ico" >
+<style>
+body {
+	white-space: pre;
+	font-family: "Courier New", Courier, monospace;
+	font-size: 24px;
+	background-color: #795428;
+}
+
+button {
+	text-align: center;
+	font-size: 24px;
+	font-family: "Courier New", Courier, monospace;
+	border-radius: 8px;
+	margin: 5px;
+	padding: 3px;
+	transition-duration: 0.6s;
+	-webkit-transition-duration: 0.6s;
+}
+
+button:hover {
+	padding: 5px;
+	margin: 3px;
+}
+
+</style>
+<script>
+
+class XQButton {       // Probably not the best solution, but it's the solution I made
+	constructor(T,O){
+		this.T = T;
+		this.O = O;
+	}
+}
+
+const nonDungeonRooms = 2;
+var buttonsets = [];
+function setButtons(){
+	let b1 = new XQButton("","");
+	let b2 = new XQButton("","");
+	buttonsets = [];
+	buttonsets.push([new XQButton("🍍 Reset the universe to before you entered this dungeon? 🍍","initGame()")]);
+	buttonsets.push([new XQButton("Get another 🍍","addP()"),new XQButton("Enter the Dungeon ▶️","dungeonRoom()")]);
+	buttonsets.push([new XQButton("◀️ Go Left","dungeonRoom()"),new XQButton("Go Right ▶️","dungeonRoom()")]);
+	if(pineapples>=1){
+		b1 = new XQButton("(-🍍) Eat a 🍍","eatP()");
+		b2 = new XQButton("(-❤️) Save your pineapples","eatH()");
+	} else {
+		b1 = new XQButton("You have no 🍍","");
+		b2 = new XQButton("(-❤️)","eatH()");
+	}
+	buttonsets.push([b1,b2]);
+	if(pineapples>=1){
+		b1 = new XQButton("(-🍍) Sacrifice a 🍍","sacrificeP(1)");
+	} else {
+		b1 = new XQButton("You have no 🍍","");
+	}
+	buttonsets.push([b1,new XQButton("Respectfully pass by the altar","dungeonRoom()"),new XQButton("Desecrate the altar","angerElp()")]);
+	buttonsets.push([new XQButton("Pick up a 🍍","addP()"),new XQButton("Move on ▶️","dungeonRoom()")]);
+	if(pineapples>=5){
+		b1 = new XQButton("(5🍍⟿🧉) 🧉➞❤️","wizard('heal')");
+	} else {
+		b1 = new XQButton("You don't have enough 🍍","");
+	}
+	buttonsets.push([b1,new XQButton("Enough wizardry for now ▶️","dungeonRoom()")]);
+	let passingFunc = "";
+	if(Math.random()>1/ElpGenerosity){
+		passingFunc = "updateUI()";
+	} else {
+		passingFunc = "dungeonRoom()";
+	}
+	let bArray = [new XQButton("◀️ Go Left",passingFunc),
+					new XQButton("Go Right ▶️",passingFunc),
+					new XQButton("🔼 Go Ahead",passingFunc),
+					new XQButton("Turn Around 🔽",passingFunc)]
+	buttonsets.push(randomiseArray(bArray));
+	// buttonsets.push();
+}
+const roomDescs = ["You come across a branch in the dungeon's paths","You are getting hungry.","You encounter a sacrificial altar \nawaiting a pineapple sacrifice to 𝔈𝔩𝔭 𝔓𝔞𝔢𝔫𝔦𝔭.","You find a bunch of pineapples lying around.","You cross paths with a wizard who can turn\npineapples into health-restoring potions.","You run into a maze designed by 𝔈𝔩𝔭 𝔓𝔞𝔢𝔫𝔦𝔭.\nGood luck getting out!"];
+var currSet = 1;
+var prevSet = 1;
+var desc = "You are about to enter the dungeon.";
+var pineapples = 10;
+var hearts = 3;
+var ElpGenerosity = 5;
+
+function randomiseArray(a){
+	let x = a;
+	let b = [];
+	while(x.length>0){
+		let index = Math.floor(Math.random()*x.length);
+		b.push(x[index])
+		x.splice(index,1);
+	}
+	return b;
+};
+
+function initGame(){
+	pineapples = 10;
+	hearts = 3;
+	currSet = 1;
+	prevSet = 1;
+	setButtons();
+	updateUI();
+};
+
+function wizard(task){
+	if(task==="heal"){
+		pineapples -= 5;
+		addH();
+	}
+};
+
+function sacrificeP(amount){
+	pineapples -= amount;
+	desc = "𝔈𝔩𝔭 𝔓𝔞𝔢𝔫𝔦𝔭 is pleased with your offering and rewards you.";
+	for(let i = 0;i<Math.floor(Math.random()*ElpGenerosity)*amount+2;i++){
+		setTimeout(function(e){pineapples++;updateUI();},500);
+	}
+	ElpGenerosity++;
+	setTimeout(dungeonRoom,2000);
+};
+
+function angerElp(){
+	desc = "You have angered 𝔈𝔩𝔭 𝔓𝔞𝔢𝔫𝔦𝔭. A bad decision.\nAll your pineapples turn to mush";
+	pineapples = 0;
+	ElpGenerosity--;
+	updateUI();
+	setTimeout(dungeonRoom,2000);
+};
+
+function addP(){
+	pineapples++;
+	updateUI();
+};
+
+function eatP(){
+	pineapples--;
+	updateUI();
+	dungeonRoom();
+};
+
+function eatH(){
+	hearts--;
+	if(hearts===0){
+		desc = "You have run out of health.";
+		currSet = 0;
+		updateUI();
+	} else {
+		dungeonRoom();
+	}
+};
+
+function addH(){
+	hearts++;
+	updateUI();
+};
+
+function dungeonRoom(){
+	let roomType = 0;
+	do {
+		roomType = Math.floor(Math.random()*(buttonsets.length-nonDungeonRooms));
+		currSet = roomType + nonDungeonRooms;
+	} while (currSet===prevSet); // Don't have the same room twice in a row
+	desc = roomDescs[roomType];
+	prevSet = currSet;
+	updateUI();
+};
+
+function updateUI(){
+	document.getElementById("PCount").innerHTML = pineapples;
+	document.getElementById("HCount").innerHTML = hearts;
+	document.getElementById("desc").innerHTML = desc;
+	// Buttons
+	setButtons();
+	let c = ""
+	for(let i=0;i<buttonsets[currSet].length;i++){
+		let thisButton = buttonsets[currSet][i];
+		c += "<button onclick=\""+thisButton.O+"\">"+thisButton.T+"</button>"
+	}
+	document.getElementById("buttons").innerHTML = c;
+};
+
+</script>
+</head>
+<body onload="initGame()">
+<h1>Endless Pineapple Dungeon Madness</h1>
+<h2>🍍:<span id="PCount"></span> ❤️:<span id="HCount"></span></h2>
+<p id="desc">You are about to enter the dungeon.</p>
+<div id="buttons"></div>
+</body>
+</html>
